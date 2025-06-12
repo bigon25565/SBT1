@@ -1,4 +1,6 @@
-from flask import Flask, Response
+from flask import Flask, Response, jsonify, abort
+from datetime import datetime
+import re
 
 app = Flask(__name__)
 
@@ -60,3 +62,35 @@ def fetch():
 </html>
 """.strip()
     return Response(html, content_type="text/html; charset=UTF-8")
+
+# Новый маршрут /DDMMYY — формат даты текущей даты
+@app.route("/<date_str>")
+def date_route(date_str):
+    # Проверяем, что строка из 6 цифр
+    if not re.fullmatch(r"\d{6}", date_str):
+        abort(404)
+
+    # Получаем текущую дату
+    now = datetime.now()
+
+    # Форматируем дату в DDMMYY и сравниваем с date_str
+    expected = now.strftime("%d%m%y")
+    if date_str != expected:
+        abort(404)
+
+    # Форматируем дату в DD-MM-YYYY
+    formatted_date = now.strftime("%d-%m-%Y")
+
+    data = {
+        "date": formatted_date,
+        "login": "1147329"
+    }
+    return jsonify(data)
+
+# Маршрут /api/rv/<abc> — переворачиваем строку abc, где abc — строчные латинские буквы
+@app.route("/api/rv/<abc>")
+def reverse_route(abc):
+    if not re.fullmatch(r"[a-z]+", abc):
+        abort(404)
+    reversed_str = abc[::-1]
+    return Response(reversed_str, content_type="text/plain; charset=UTF-8")
