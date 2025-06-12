@@ -1,35 +1,35 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, Response
+from PIL import Image
+import io
 
 app = Flask(__name__)
 
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "x-test,ngrok-skip-browser-warning,Content-Type,Accept,Access-Control-Allow-Headers"
-    return response
+@app.route("/login", methods=["GET"])
+def login():
+    return Response("1147329", content_type="text/plain; charset=UTF-8")
 
-@app.after_request
-def apply_cors(response):
-    return add_cors_headers(response)
+@app.route("/size2json", methods=["POST"])
+def size2json():
+    if "image" not in request.files:
+        return jsonify({"error": "No image part"}), 400
+    
+    file = request.files["image"]
 
-@app.route("/result4/", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-def result4():
-    if request.method == "OPTIONS":
-        response = make_response("", 204)
-        return add_cors_headers(response)
-
-    x_test = request.headers.get("x-test", "")
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
 
     try:
-        x_body = request.get_data(as_text=True)
-    except Exception:
-        x_body = ""
+        img_bytes = file.read()
+        img = Image.open(io.BytesIO(img_bytes))
 
-    data = {
-        "message": "1147329",
-        "x-result": x_test,
-        "x-body": x_body
-    }
-    response = jsonify(data)
-    response.headers["Content-Type"] = "application/json"
-    return response
+        if img.format != "PNG":
+            return jsonify({"error": "File is not PNG"}), 400
+
+        width, height = img.size
+        return jsonify({"width": width, "height": height})
+
+    except Exception:
+        return jsonify({"error": "Invalid image"}), 400
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
