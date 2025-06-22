@@ -1,33 +1,31 @@
-from flask import Flask, request, Response
+from flask import Flask, request, send_file, jsonify
 from PIL import Image
 import io
 
 app = Flask(__name__)
 
-@app.route("/login")
-def login():
-    return Response("1147329", content_type="text/plain; charset=UTF-8")
-
-@app.route("/makeimage")
+@app.route('/makeimage', methods=['GET'])
 def makeimage():
-    width = request.args.get("width")
-    height = request.args.get("height")
-
     try:
-        width = int(width)
-        height = int(height)
-        if width <= 0 or height <= 0:
-            raise ValueError
+        width = int(request.args.get('width'))
+        height = int(request.args.get('height'))
     except (TypeError, ValueError):
-        return Response("Invalid width or height", status=400, content_type="text/plain; charset=UTF-8")
+        return "Invalid width or height", 400
 
-    img = Image.new("RGB", (width, height), color=(255, 255, 255))
+    if width <= 0 or height <= 0 or width > 2000 or height > 2000:
+        return "Invalid image size", 400
 
-    img_bytes = io.BytesIO()
-    img.save(img_bytes, format="PNG")
-    img_bytes.seek(0)
+    image = Image.new("RGB", (width, height), "red")
 
-    return Response(img_bytes.read(), content_type="image/png")
+    img_io = io.BytesIO()
+    image.save(img_io, format='PNG')
+    img_io.seek(0)
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    return send_file(img_io, mimetype='image/png')
+
+@app.route('/login')
+def login():
+    return '1147329'
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)
